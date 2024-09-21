@@ -2,6 +2,7 @@ import axios from "axios"
 import { z } from "zod"
 // import { object, string, number, InferOutput, parse } from "valibot"
 import { SearchType } from "../types"
+import { useMemo, useState } from "react"
 
 // Type Guards/Assertions
 // function isWeatherResponse(weather: unknown): weather is Weather {
@@ -24,7 +25,7 @@ const Weather = z.object({
         temp_min: z.number()
     })
 })
-type Weather = z.infer<typeof Weather>
+export type Weather = z.infer<typeof Weather>
 
 // Valibot
 // const Weather = object({
@@ -38,6 +39,15 @@ type Weather = z.infer<typeof Weather>
 // type Weather = InferOutput<typeof Weather>
 
 export default function useWeather() {
+
+    const [weather, setWeather] = useState<Weather>({
+        name: '',
+        main: {
+            temp: 0,
+            temp_max: 0,
+            temp_min: 0
+        }
+    })
 
     const fetchWeather = async (search: SearchType) => {
         const apiKey = import.meta.env.VITE_API_KEY
@@ -63,15 +73,6 @@ export default function useWeather() {
             //     console.error('Invalid weather response')
             // }
 
-            // Zod
-            const { data: weatherResult } = await axios.get(weatherUrl)
-            const result = Weather.safeParse(weatherResult)
-            if (result.success) {
-                console.log(result.data)
-            } else {
-                console.error('Invalid weather response')
-            }
-
             // Valibot
             // const { data: weatherResult } = await axios.get(weatherUrl)
             // const result = parse(Weather, weatherResult)
@@ -81,12 +82,25 @@ export default function useWeather() {
             //     console.error('Invalid weather response')
             // }
 
+            // Zod
+            const { data: weatherResult } = await axios.get(weatherUrl)
+            const result = Weather.safeParse(weatherResult)
+            if (result.success) {
+                setWeather(result.data)
+            } else {
+                console.error('Invalid weather response')
+            }
+
         } catch (error) {
             console.error(error)
         }
     }
 
+    const hasWeatherData = useMemo(() => weather.name, [weather])
+
     return {
-        fetchWeather
+        weather,
+        fetchWeather,
+        hasWeatherData
     }
 }
